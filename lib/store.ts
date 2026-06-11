@@ -23,8 +23,56 @@ export type NutritionEstimate = {
   notes?: string;
 };
 
+export type Goals = {
+  calories: number;
+  protein: number; // grams
+  carbs: number; // grams
+  fat: number; // grams
+};
+
 const MEALS_KEY = "nutriscan.meals";
-const GOAL_KEY = "nutriscan.goal";
+const LEGACY_GOAL_KEY = "nutriscan.goal";
+const GOALS_KEY = "nutriscan.goals";
+
+export const DEFAULT_GOALS: Goals = {
+  calories: 2000,
+  protein: 120,
+  carbs: 250,
+  fat: 65,
+};
+
+// Change notification so components can react to store writes
+// (useSyncExternalStore-compatible). The "storage" event covers other tabs.
+const listeners = new Set<() => void>();
+
+function emitChange() {
+  listeners.forEach((l) => l());
+}
+
+export function subscribeStore(onChange: () => void): () => void {
+  listeners.add(onChange);
+  window.addEventListener("storage", onChange);
+  return () => {
+    listeners.delete(onChange);
+    window.removeEventListener("storage", onChange);
+  };
+}
+
+// Raw string snapshots: stable references for useSyncExternalStore.
+export function mealsSnapshot(): string {
+  return localStorage.getItem(MEALS_KEY) || "[]";
+}
+
+export function goalsSnapshot(): string {
+  const raw = localStorage.getItem(GOALS_KEY);
+  if (raw) return raw;
+  // Migrate the old single calorie goal if one was saved.
+  const legacy = Number(localStorage.getItem(LEGACY_GOAL_KEY));
+  if (Number.isFinite(legacy) && legacy > 0) {
+    return JSON.stringify({ ...DEFAULT_GOALS, calories: legacy });
+  }
+  return "";
+}
 
 export function todayKey(d = new Date()): string {
   const y = d.getFullYear();
@@ -44,6 +92,7 @@ export function loadMeals(): Meal[] {
 
 export function saveMeals(meals: Meal[]) {
   localStorage.setItem(MEALS_KEY, JSON.stringify(meals));
+  emitChange();
 }
 
 export function addMeal(meal: Omit<Meal, "id" | "date" | "time"> & Partial<Pick<Meal, "date" | "time">>): Meal {
@@ -72,14 +121,35 @@ export function mealsForDate(date: string): Meal[] {
     .sort((a, b) => a.time.localeCompare(b.time));
 }
 
-export function loadGoal(): number {
-  if (typeof window === "undefined") return 2000;
-  const g = Number(localStorage.getItem(GOAL_KEY));
-  return Number.isFinite(g) && g > 0 ? g : 2000;
+// Pure parse of a goalsSnapshot() string — safe to call during hydration.
+export function parseGoals(json: string): Goals {
+  if (!json) return DEFAULT_GOALS;
+  try {
+    const g = JSON.parse(json);
+    return {
+      calories: positiveOr(g.calories, DEFAULT_GOALS.calories),
+      protein: positiveOr(g.protein, DEFAULT_GOALS.protein),
+      carbs: positiveOr(g.carbs, DEFAULT_GOALS.carbs),
+      fat: positiveOr(g.fat, DEFAULT_GOALS.fat),
+    };
+  } catch {
+    return DEFAULT_GOALS;
+  }
 }
 
-export function saveGoal(goal: number) {
-  localStorage.setItem(GOAL_KEY, String(goal));
+export function loadGoals(): Goals {
+  if (typeof window === "undefined") return DEFAULT_GOALS;
+  return parseGoals(goalsSnapshot());
+}
+
+export function saveGoals(goals: Goals) {
+  localStorage.setItem(GOALS_KEY, JSON.stringify(goals));
+  emitChange();
+}
+
+function positiveOr(v: unknown, fallback: number): number {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 
 export function defaultMealType(): Meal["mealType"] {

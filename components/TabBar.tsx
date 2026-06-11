@@ -4,9 +4,10 @@ import { usePathname } from "next/navigation";
 
 const tabs = [
   { href: "/", label: "Today", icon: HomeIcon },
-  { href: "/scan", label: "Scan", icon: ScanIcon, center: true },
   { href: "/alternatives", label: "Eat Out", icon: ForkIcon },
+  { href: "/scan", label: "Scan", icon: ScanIcon, center: true },
   { href: "/log", label: "Log", icon: PlusIcon },
+  { href: "/goals", label: "Goals", icon: TargetIcon },
 ];
 
 export default function TabBar() {
@@ -57,9 +58,9 @@ function HomeIcon({ active }: { active: boolean }) {
     </svg>
   );
 }
-function ScanIcon(_: { active: boolean }) {
+function ScanIcon({ active }: { active: boolean }) {
   return (
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.4 : 2} strokeLinecap="round">
       <path d="M4 8V6a2 2 0 012-2h2M16 4h2a2 2 0 012 2v2M20 16v2a2 2 0 01-2 2h-2M8 20H6a2 2 0 01-2-2v-2" />
       <circle cx="12" cy="12" r="3.5" />
     </svg>
@@ -70,6 +71,15 @@ function ForkIcon({ active }: { active: boolean }) {
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.4 : 1.8} strokeLinecap="round">
       <path d="M7 3v7a2 2 0 002 2v9M7 3v5M11 3v5" transform="translate(-2 0)" />
       <path d="M17 3c-1.5 1-2.5 3-2.5 5.5 0 2 1 3.5 2.5 3.5v9" />
+    </svg>
+  );
+}
+function TargetIcon({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={active ? 2.4 : 1.8} strokeLinecap="round">
+      <circle cx="12" cy="12" r="8" />
+      <circle cx="12" cy="12" r="4" />
+      <circle cx="12" cy="12" r="0.5" fill="currentColor" />
     </svg>
   );
 }

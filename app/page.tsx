@@ -1,28 +1,37 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
 import {
   Meal,
-  mealsForDate,
   deleteMeal,
-  loadGoal,
-  saveGoal,
+  goalsSnapshot,
+  mealsSnapshot,
+  parseGoals,
+  subscribeStore,
   todayKey,
 } from "@/lib/store";
 
+const emptyMeals = "[]";
+
 export default function TodayPage() {
-  const [meals, setMeals] = useState<Meal[]>([]);
-  const [goal, setGoal] = useState(2000);
-  const [editingGoal, setEditingGoal] = useState(false);
-  const [ready, setReady] = useState(false);
+  // Server snapshots return empty defaults; the client re-renders with real
+  // data right after hydration, so `ready` doubles as a hydration flag.
+  const mealsJson = useSyncExternalStore(subscribeStore, mealsSnapshot, () => emptyMeals);
+  const goalsJson = useSyncExternalStore(subscribeStore, goalsSnapshot, () => "");
+  const ready = useSyncExternalStore(subscribeStore, () => true, () => false);
 
-  const refresh = () => setMeals(mealsForDate(todayKey()));
+  const meals = useMemo<Meal[]>(() => {
+    const today = todayKey();
+    try {
+      return (JSON.parse(mealsJson) as Meal[])
+        .filter((m) => m.date === today)
+        .sort((a, b) => a.time.localeCompare(b.time));
+    } catch {
+      return [];
+    }
+  }, [mealsJson]);
 
-  useEffect(() => {
-    refresh();
-    setGoal(loadGoal());
-    setReady(true);
-  }, []);
+  const goals = useMemo(() => parseGoals(goalsJson), [goalsJson]);
 
   const totals = meals.reduce(
     (t, m) => ({
@@ -34,8 +43,8 @@ export default function TodayPage() {
     { calories: 0, protein: 0, carbs: 0, fat: 0 }
   );
 
-  const pct = Math.min(totals.calories / goal, 1);
-  const remaining = Math.max(goal - totals.calories, 0);
+  const pct = Math.min(totals.calories / goals.calories, 1);
+  const remaining = Math.max(goals.calories - totals.calories, 0);
 
   const dateLabel = new Date().toLocaleDateString(undefined, {
     weekday: "long",
@@ -54,33 +63,12 @@ export default function TodayPage() {
       <section className="card flex items-center gap-6 p-5">
         <CalorieRing pct={ready ? pct : 0} calories={totals.calories} />
         <div className="flex-1 space-y-1">
-          {editingGoal ? (
-            <div className="flex items-center gap-2">
-              <input
-                className="field !w-24 !py-1.5 text-center"
-                type="number"
-                inputMode="numeric"
-                defaultValue={goal}
-                autoFocus
-                onBlur={(e) => {
-                  const g = Number(e.target.value);
-                  if (g > 0) {
-                    setGoal(g);
-                    saveGoal(g);
-                  }
-                  setEditingGoal(false);
-                }}
-              />
-              <span className="text-sm text-muted">kcal goal</span>
-            </div>
-          ) : (
-            <button
-              onClick={() => setEditingGoal(true)}
-              className="text-left text-sm text-muted underline decoration-dotted underline-offset-4"
-            >
-              Goal: {goal.toLocaleString()} kcal
-            </button>
-          )}
+          <Link
+            href="/goals"
+            className="block text-left text-sm text-muted underline decoration-dotted underline-offset-4"
+          >
+            Goal: {goals.calories.toLocaleString()} kcal
+          </Link>
           <p className="text-lg font-semibold">
             {remaining.toLocaleString()} <span className="text-sm font-normal text-muted">kcal left</span>
           </p>
@@ -89,9 +77,9 @@ export default function TodayPage() {
 
       {/* Macros */}
       <section className="grid grid-cols-3 gap-3">
-        <MacroCard label="Protein" value={totals.protein} color="var(--leaf)" />
-        <MacroCard label="Carbs" value={totals.carbs} color="var(--clem)" />
-        <MacroCard label="Fat" value={totals.fat} color="var(--pine)" />
+        <MacroCard label="Protein" value={totals.protein} target={goals.protein} color="var(--leaf)" />
+        <MacroCard label="Carbs" value={totals.carbs} target={goals.carbs} color="var(--clem)" />
+        <MacroCard label="Fat" value={totals.fat} target={goals.fat} color="var(--pine)" />
       </section>
 
       {/* Meals */}
@@ -121,10 +109,7 @@ export default function TodayPage() {
             <p className="font-display font-semibold text-clem">{m.calories}</p>
             <button
               aria-label={`Delete ${m.name}`}
-              onClick={() => {
-                deleteMeal(m.id);
-                refresh();
-              }}
+              onClick={() => deleteMeal(m.id)}
               className="rounded-full p-2 text-muted hover:text-ink"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -162,12 +147,30 @@ function CalorieRing({ pct, calories }: { pct: number; calories: number }) {
   );
 }
 
-function MacroCard({ label, value, color }: { label: string; value: number; color: string }) {
+function MacroCard({
+  label,
+  value,
+  target,
+  color,
+}: {
+  label: string;
+  value: number;
+  target: number;
+  color: string;
+}) {
+  const pct = Math.min(value / target, 1);
   return (
-    <div className="card p-3 text-center">
+    <div className="card space-y-1.5 p-3 text-center">
       <p className="font-display text-xl font-bold" style={{ color }}>
-        {Math.round(value)}g
+        {Math.round(value)}
+        <span className="text-sm font-normal text-muted">/{target}g</span>
       </p>
+      <div className="h-1.5 overflow-hidden rounded-full bg-line">
+        <div
+          className="h-full rounded-full"
+          style={{ width: `${pct * 100}%`, background: color, transition: "width 0.6s ease" }}
+        />
+      </div>
       <p className="text-xs font-medium text-muted">{label}</p>
     </div>
   );
