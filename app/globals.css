@@ -1,0 +1,113 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f4f6ef;
+  --ink: #18291e;
+  --pine: #1f5638;
+  --leaf: #3e9a63;
+  --leaf-soft: #e3f0e6;
+  --clem: #ff7a3b;
+  --clem-soft: #ffe9dd;
+  --card: #ffffff;
+  --muted: #6b7a6f;
+  --line: #e2e8de;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-pine: var(--pine);
+  --color-leaf: var(--leaf);
+  --color-leaf-soft: var(--leaf-soft);
+  --color-clem: var(--clem);
+  --color-clem-soft: var(--clem-soft);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --font-display: "Sora", system-ui, sans-serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+}
+
+html,
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Inter", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+h1, h2, h3, .display {
+  font-family: "Sora", system-ui, sans-serif;
+}
+
+input, select, textarea {
+  font-size: 16px; /* prevents iOS zoom on focus */
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+
+.btn-primary {
+  background: var(--pine);
+  color: #fff;
+  border-radius: 14px;
+  font-weight: 600;
+  padding: 0.875rem 1.25rem;
+  width: 100%;
+  transition: opacity 0.15s;
+}
+.btn-primary:disabled { opacity: 0.5; }
+.btn-primary:active { opacity: 0.85; }
+
+.field {
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.75rem 0.875rem;
+  outline: none;
+}
+.field:focus { border-color: var(--leaf); }
+
+.label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 0.375rem;
+}
+
+.chip {
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.chip[data-on="true"] {
+  background: var(--pine);
+  border-color: var(--pine);
+  color: #fff;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.scan-pulse::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 2px solid var(--leaf);
+  animation: pulse-ring 1.4s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .scan-pulse::after { animation: none; }
+}
