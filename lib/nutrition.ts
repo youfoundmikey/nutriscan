@@ -70,6 +70,13 @@ export async function resolveItems(items: AiItem[]): Promise<{
   const resolved: (ResolvedItem | null)[] = await Promise.all(
     items.map(async (item) => {
       const g = grams(item.grams) || 100; // default to 100g if unspecified
+
+      // The model reliably recognizes (near-)zero-calorie items — water, black
+      // coffee, plain tea, diet soda. When it estimates ~0 kcal, trust that over
+      // a fuzzy USDA search, which can latch onto a calorie-dense near-name match.
+      const aiCal = Number(item.calories);
+      if (Number.isFinite(aiCal) && aiCal <= 5) return fromAi(item, g);
+
       if (item.branded) return null; // skip USDA, go straight to web batch
       const match = await lookupFood(item.query || item.food);
       if (!match) return null;

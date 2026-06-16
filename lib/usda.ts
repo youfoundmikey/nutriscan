@@ -46,27 +46,42 @@ function nutrient(food: RawFood, number: string): number | undefined {
 }
 
 function toPer100g(food: RawFood): FoodMatch | null {
-  const protein = nutrient(food, N_PROTEIN) ?? 0;
-  const carbs = nutrient(food, N_CARBS) ?? 0;
-  const fat = nutrient(food, N_FAT) ?? 0;
-  // Prefer the labelled kcal value; fall back to Atwater, then to an Atwater
-  // estimate from the macros so we never return a 0-calorie match.
-  const calories =
-    nutrient(food, N_ENERGY_KCAL) ??
-    nutrient(food, N_ENERGY_ATWATER) ??
-    Math.round(protein * 4 + carbs * 4 + fat * 9);
+  const energy = nutrient(food, N_ENERGY_KCAL) ?? nutrient(food, N_ENERGY_ATWATER);
+  const protein = nutrient(food, N_PROTEIN);
+  const carbs = nutrient(food, N_CARBS);
+  const fat = nutrient(food, N_FAT);
 
-  // A genuine match should have at least some macro/energy signal.
-  if (!calories && !protein && !carbs && !fat) return null;
+  // A usable match must *report* energy or at least one macro. We check for
+  // presence (`undefined`), not truthiness — water legitimately reports 0 kcal /
+  // 0 macros, and treating that as "no signal" used to make the search fall
+  // through to a calorie-dense near-name match (e.g. "water" → "Crackers, water").
+  if (
+    energy === undefined &&
+    protein === undefined &&
+    carbs === undefined &&
+    fat === undefined
+  ) {
+    return null;
+  }
+
+  const p = protein ?? 0;
+  const c = carbs ?? 0;
+  const f = fat ?? 0;
+  // Prefer the labelled energy value; fall back to an Atwater estimate from macros.
+  const calories = energy ?? Math.round(p * 4 + c * 4 + f * 9);
+
+  // Reject physically impossible energy density (pure fat ≈ 900 kcal/100g); such
+  // matches are almost always the wrong food.
+  if (calories > 900) return null;
 
   return {
     fdcId: food.fdcId,
     description: food.description,
     dataType: food.dataType,
     calories,
-    protein,
-    carbs,
-    fat,
+    protein: p,
+    carbs: c,
+    fat: f,
   };
 }
 
