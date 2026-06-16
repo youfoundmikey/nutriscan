@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { addMeal, defaultMealType, NutritionEstimate, Meal } from "@/lib/store";
+import Breakdown from "@/components/Breakdown";
 
 type Stage = "idle" | "analyzing" | "review" | "error";
 
@@ -41,6 +42,7 @@ export default function ScanPage() {
         carbs: Math.round(Number(data.carbs) || 0),
         fat: Math.round(Number(data.fat) || 0),
         notes: data.notes,
+        items: Array.isArray(data.items) ? data.items : undefined,
       });
       setStage("review");
     } catch (e) {
@@ -145,6 +147,9 @@ export default function ScanPage() {
               <NumField label="Carbs" value={result.carbs} onChange={(v) => setResult({ ...result, carbs: v })} />
               <NumField label="Fat" value={result.fat} onChange={(v) => setResult({ ...result, fat: v })} />
             </div>
+            {result.items && result.items.length > 0 && (
+              <Breakdown items={result.items} />
+            )}
             {result.notes && <p className="text-xs text-muted">{result.notes}</p>}
             <div className="flex flex-wrap gap-2">
               {(["Breakfast", "Lunch", "Dinner", "Snack"] as const).map((t) => (

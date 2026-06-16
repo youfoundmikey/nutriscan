@@ -13,6 +13,18 @@ export type Meal = {
   source: "scan" | "manual" | "ai";
 };
 
+// One grounded food component within an estimate. `source` shows where the
+// numbers came from so the user can trust them at a glance.
+export type MealItem = {
+  food: string;
+  grams: number;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  source: "usda" | "web" | "ai";
+};
+
 export type NutritionEstimate = {
   name: string;
   serving: string;
@@ -21,6 +33,7 @@ export type NutritionEstimate = {
   carbs: number;
   fat: number;
   notes?: string;
+  items?: MealItem[];
 };
 
 export type Goals = {

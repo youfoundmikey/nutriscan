@@ -96,6 +96,20 @@ input, select, textarea {
   color: #fff;
 }
 
+/* Nutrition source badges: green = grounded in a database, orange = AI estimate. */
+.source-badge[data-source="usda"] {
+  background: var(--leaf-soft);
+  color: var(--pine);
+}
+.source-badge[data-source="web"] {
+  background: var(--leaf-soft);
+  color: var(--leaf);
+}
+.source-badge[data-source="ai"] {
+  background: var(--clem-soft);
+  color: var(--clem);
+}
+
 @keyframes pulse-ring {
   0% { transform: scale(1); opacity: 0.6; }
   100% { transform: scale(1.6); opacity: 0; }

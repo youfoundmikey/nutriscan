@@ -8,10 +8,18 @@ type ContentBlock =
       source: { type: "base64"; media_type: string; data: string };
     };
 
+type AskOptions = {
+  // When true, give the model the web_search tool so it can look up nutrition
+  // for branded / restaurant items that aren't in the USDA database. Search is
+  // executed server-side by Anthropic, so we still get a single final response.
+  web?: boolean;
+};
+
 export async function askClaudeJSON(
   system: string,
   content: ContentBlock[],
-  maxTokens = 1500
+  maxTokens = 1500,
+  opts: AskOptions = {}
 ): Promise<unknown> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) {
@@ -32,6 +40,13 @@ export async function askClaudeJSON(
       max_tokens: maxTokens,
       system,
       messages: [{ role: "user", content }],
+      ...(opts.web
+        ? {
+            tools: [
+              { type: "web_search_20250305", name: "web_search", max_uses: 3 },
+            ],
+          }
+        : {}),
     }),
   });
 

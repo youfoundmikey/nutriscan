@@ -1,7 +1,8 @@
 "use client";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { addMeal, defaultMealType, Meal } from "@/lib/store";
+import { addMeal, defaultMealType, Meal, MealItem } from "@/lib/store";
+import Breakdown from "@/components/Breakdown";
 
 export default function LogPage() {
   const router = useRouter();
@@ -15,6 +16,7 @@ export default function LogPage() {
   const [estimating, setEstimating] = useState(false);
   const [error, setError] = useState("");
   const [estimateNote, setEstimateNote] = useState("");
+  const [items, setItems] = useState<MealItem[]>([]);
 
   const canSave = name.trim() && calories !== "" && Number(calories) >= 0;
 
@@ -36,6 +38,7 @@ export default function LogPage() {
       setProtein(Math.round(Number(data.protein) || 0));
       setCarbs(Math.round(Number(data.carbs) || 0));
       setFat(Math.round(Number(data.fat) || 0));
+      setItems(Array.isArray(data.items) ? data.items : []);
       if (data.notes) setEstimateNote(data.notes);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Something went wrong.");
@@ -78,6 +81,7 @@ export default function LogPage() {
         <button className="btn-primary" disabled={estimating || !desc.trim()} onClick={estimate}>
           {estimating ? "Estimating…" : "Estimate with AI"}
         </button>
+        {items.length > 0 && <Breakdown items={items} />}
         {estimateNote && <p className="text-xs text-muted">{estimateNote}</p>}
       </div>
 
